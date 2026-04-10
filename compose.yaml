@@ -1,0 +1,55 @@
+# docker-compose.yml
+services:
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    networks:
+      - llm-net
+    # If you have an NVIDIA GPU, uncomment the block below:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  anythingllm:
+    image: mintplexlabs/anythingllm:latest
+    container_name: anythingllm
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - anythingllm-storage:/app/server/storage
+    environment:
+      - STORAGE_DIR=/app/server/storage
+      # Point AnythingLLM at the Ollama container by service name
+      - LLM_PROVIDER=ollama
+      - OLLAMA_BASE_PATH=http://ollama:11434
+      # Optional: set a default model (must be pulled first — see below)
+      - OLLAMA_MODEL_PREF=llama3
+      # Embedding (Ollama can handle this too)
+      - EMBEDDING_ENGINE=ollama
+      - EMBEDDING_BASE_PATH=http://ollama:11434
+      - OLLAMA_EMBEDDING_MODEL_PREF=nomic-embed-text
+      # Auth token for the UI (change this!)
+      - AUTH_TOKEN=changeme
+    depends_on:
+      - ollama
+    networks:
+      - llm-net
+
+volumes:
+  ollama-models:
+  anythingllm-storage:
+
+networks:
+  llm-net:
+    driver: bridge
